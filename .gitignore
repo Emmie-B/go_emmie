@@ -1,0 +1,57 @@
+# Binaries
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.html
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+ 
+
+# Logs
+*.log
+logs/
+
+# Prisma
+prisma/db/
+
+ 
+
+# Temporary files
+tmp/
+temp/
+
+# Docker
+.docker/
+
+# Build
+dist/
+build/
+
+ 
