@@ -13,7 +13,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 enum Role {
   CUSTOMER
   ADMIN
@@ -32,18 +31,18 @@ enum OrderStatus {
 // ──────────────────────────────────────────────
 
 model User {
-  id              String    @id @default(uuid())
-  email           String    @unique
-  passwordHash    String
-  firstName       String
-  lastName        String
-  role            Role      @default(CUSTOMER)
-  isVerified      Boolean   @default(false)
-  verifyToken     String?   @unique
-  verifyExpiresAt DateTime?
-  refreshToken    String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id               String    @id @default(uuid())
+  email            String    @unique
+  passwordHash     String
+  firstName        String
+  lastName         String
+  role             Role      @default(CUSTOMER)
+  isVerified       Boolean   @default(false)
+  verifyToken      String?   @unique
+  verifyExpiresAt  DateTime?
+  refreshTokenHash String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   cart   Cart?
   orders Order[]
@@ -52,10 +51,10 @@ model User {
 }
 
 model Category {
-  id        String    @id @default(uuid())
-  name      String    @unique
-  slug      String    @unique
-  createdAt DateTime  @default(now())
+  id        String   @id @default(uuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
 
   products Product[]
 
@@ -84,9 +83,9 @@ model Product {
 }
 
 model Cart {
-  id        String     @id @default(uuid())
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -102,8 +101,8 @@ model CartItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  cartId    String
-  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId String
+  cart   Cart   @relation(fields: [cartId], references: [id], onDelete: Cascade)
 
   productId String
   product   Product @relation(fields: [productId], references: [id])
@@ -141,6 +140,3 @@ model OrderItem {
 
   @@map("order_items")
 }
-
-
- 

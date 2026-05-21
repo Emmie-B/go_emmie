@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"go_emmie/internal/repositories"
 	"go_emmie/internal/types"
@@ -14,6 +15,11 @@ type AuthService interface {
 	RegisterUser(ctx context.Context, dto types.RegisterRequestDTO) (*types.UserResponseDTO, error)
 }
 
+var (
+	ErrValidation         = errors.New("validation error")
+	ErrEmailAlreadyExists = errors.New("email already exists")
+)
+
 type authService struct {
 	repo repositories.UserRepository
 }
@@ -25,7 +31,7 @@ func NewAuthService(repo repositories.UserRepository) AuthService {
 func (s *authService) RegisterUser(ctx context.Context, dto types.RegisterRequestDTO) (*types.UserResponseDTO, error) {
 	// Validate the incoming DTO
 	if err := dto.Validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %v", ErrValidation, err)
 	}
 
 	// check if user already exists
@@ -40,19 +46,24 @@ func (s *authService) RegisterUser(ctx context.Context, dto types.RegisterReques
 	}
 
 	if existingUser != nil {
-		return nil, fmt.Errorf("a user with this email already exists")
+		return nil, fmt.Errorf("%w: %s", ErrEmailAlreadyExists, "a user with this email already exists")
 	}
 
 	// Hash the password (this is a placeholder, implement proper hashing)
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(dto.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return &types.UserResponseDTO{}, fmt.Errorf("failed hashing password: %w", err)
+		return nil, fmt.Errorf("failed hashing password: %w", err)
 	}
 
 	// Create the user in the database
 	user, err := s.repo.Create(ctx, dto, string(passwordHash))
 	if err != nil {
+		if info, ok := db.IsErrUniqueConstraint(err); ok {
+			if len(info.Fields) == 0 || info.Fields[0] == db.User.Email.Field() {
+				return nil, fmt.Errorf("%w: email already exists", ErrEmailAlreadyExists)
+			}
+		}
 		return nil, err
 	}
 
@@ -64,13 +75,18 @@ func (s *authService) RegisterUser(ctx context.Context, dto types.RegisterReques
 
 // ToUserResponseDTO converts a raw Prisma User model into a safe, client-facing DTO
 func ToUserResponseDTO(user *db.UserModel) types.UserResponseDTO {
+	role := string(user.Role)
+	if role == "" {
+		role = "CUSTOMER"
+	}
+
 	return types.UserResponseDTO{
 		ID:         user.ID,
 		Email:      user.Email,
 		FirstName:  user.FirstName,
 		LastName:   user.LastName,
-		Role:       "CUSTOMER", // default role, adjust as needed
-		IsVerified: false,      // default verification status
+		Role:       role,
+		IsVerified: user.IsVerified,
 		CreatedAt:  user.CreatedAt,
 	}
 }

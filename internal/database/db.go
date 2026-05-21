@@ -27,9 +27,10 @@ func Connect() *DB {
 func (d *DB) Disconnect() error {
 	if err := d.Prisma.Disconnect(); err != nil {
 		log.Printf("Error disconnecting from database: %v", err)
-	} else {
-		log.Println("Disconnected from database successfully")
+		return err
 	}
+
+	log.Println("Disconnected from database successfully")
 	return nil
 }
 
@@ -42,9 +43,7 @@ func (d *DB) HealthCheck(ctx context.Context) error {
 		if db.IsErrNotFound(err) {
 			return nil
 		}
-		// For health checks we generally want to return nil unless it's
-		// a connection-level error — keep behaviour unchanged for now.
-		return nil
+		return err
 	}
 	return nil
 }

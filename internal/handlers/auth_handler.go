@@ -1,13 +1,13 @@
 package handlers
 
 import (
+	"errors"
 	"go_emmie/internal/services"
 	"go_emmie/internal/types"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
-
 
 type AuthHandler struct {
 	authService services.AuthService
@@ -29,9 +29,21 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	response, err := h.authService.RegisterUser(c.Request.Context(), payload)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		status := http.StatusInternalServerError
+		message := "internal server error"
+
+		switch {
+		case errors.Is(err, services.ErrEmailAlreadyExists):
+			status = http.StatusConflict
+			message = "email already exists"
+		case errors.Is(err, services.ErrValidation):
+			status = http.StatusBadRequest
+			message = err.Error()
+		}
+
+		c.JSON(status, gin.H{"error": message})
 		return
 	}
 
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusCreated, response)
 }
