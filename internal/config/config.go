@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"time"
+	// "time"
 
 	"github.com/spf13/viper"
 )
@@ -11,9 +11,9 @@ import (
 type Config struct {
 	Server      ServerConfig
 	Database    DatabaseConfig
-	JWT         JWTConfig
+	// JWT         JWTConfig
 	Logging     LoggingConfig
-	CORS        CORSConfig
+	// CORS        CORSConfig
 	SwaggerHost string // Base URL for Swagger docs (e.g., "api.swift-rms.org")
 }
 
@@ -32,12 +32,12 @@ type DatabaseConfig struct {
 }
 
 // JWTConfig holds JWT authentication configuration.
-type JWTConfig struct {
-	Secret        string
-	AccessExpiry  time.Duration
-	RefreshExpiry time.Duration
-	Issuer        string
-}
+// type JWTConfig struct {
+// 	Secret        string
+// 	AccessExpiry  time.Duration
+// 	RefreshExpiry time.Duration
+// 	Issuer        string
+// }
 
  
 
@@ -48,11 +48,11 @@ type LoggingConfig struct {
 }
 
 // CORSConfig holds CORS configuration.
-type CORSConfig struct {
-	AllowedOrigins []string
-	AllowedMethods []string
-	AllowedHeaders []string
-}
+// type CORSConfig struct {
+// 	AllowedOrigins []string
+// 	AllowedMethods []string
+// 	AllowedHeaders []string
+// }
 
 
 func LoadConfig() (*Config, error) {
@@ -84,8 +84,8 @@ func LoadConfig() (*Config, error) {
 		},
 		Database: DatabaseConfig{
 			URL:            v.GetString("DATABASE_URL"),
-			MaxConnections: v.GetInt("DATABASE_MAX_CONNECTIONS"),
-			MinConnections: v.GetInt("DATABASE_MIN_CONNECTIONS"),
+			// MaxConnections: v.GetInt("DATABASE_MAX_CONNECTIONS"),
+			// MinConnections: v.GetInt("DATABASE_MIN_CONNECTIONS"),
 		},
 	}
 
@@ -102,8 +102,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("APP_ENV", "development")
 	v.SetDefault("APP_PORT", 8080)
 
-	v.SetDefault("DATABASE_MAX_CONNECTIONS", 10)
-	v.SetDefault("DATABASE_MIN_CONNECTIONS", 1)
+	// v.SetDefault("DATABASE_MAX_CONNECTIONS", 10)
+	// v.SetDefault("DATABASE_MIN_CONNECTIONS", 1)
 
 	// Add more defaults as needed
 }
