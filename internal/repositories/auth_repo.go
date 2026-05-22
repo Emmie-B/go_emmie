@@ -10,9 +10,8 @@ import (
 type UserRepository interface {
 	Create(ctx context.Context, dto types.RegisterRequestDTO, passwordHash string) (*db.UserModel, error)
 	FindByEmail(ctx context.Context, email string) (*db.UserModel, error)
+	
 }
-
- 
 
 type userRepo struct {
 	db *database.DB

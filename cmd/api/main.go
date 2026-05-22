@@ -6,7 +6,9 @@ import (
 	"go_emmie/internal/database"
 	"go_emmie/internal/routes"
 	"log"
+	"net/http"
 	"os"
+	"time"
 )
 
 func main() {
@@ -28,11 +30,17 @@ func main() {
 
 	r := routes.New(cfg, dbClient)
 
-	if err := r.Run(fmt.Sprintf(":%d", cfg.Server.Port)); err != nil {
-		log.Fatalf("Failed to run server on port %d: %v", cfg.Server.Port, err)
+	srv := &http.Server{
+		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
+		Handler:      r,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
 
 	log.Printf("Server running on port %d", cfg.Server.Port)
-
-	// router.Run(":" + fmt.Sprint(cfg.Server.Port))
+	log.Printf("🚀  server listening on %s", srv.Addr)
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("server: %v", err)
+	}
 }
