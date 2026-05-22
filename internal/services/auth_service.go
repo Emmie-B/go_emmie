@@ -29,8 +29,11 @@ type authService struct {
 }
 
 
-func NewAuthService(repo repositories.UserRepository, cfg *config.Config) AuthService {
-	return &authService{repo: repo, cfg: cfg}
+func NewAuthService(repo repositories.UserRepository, cfg *config.Config) (AuthService, error) {
+	if cfg == nil {
+		return nil, errors.New("config cannot be nil")
+	}
+	return &authService{repo: repo, cfg: cfg}, nil
 }
 
 func (s *authService) RegisterUser(ctx context.Context, dto types.RegisterRequestDTO) (*types.UserResponseDTO, error) {

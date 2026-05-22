@@ -31,7 +31,7 @@ func RequireAuth(cfg *config.Config) gin.HandlerFunc {
 		}
 
 		tokenString := parts[1]
-		claims, err := utils.VerifyToken(tokenString, cfg.JWT.Secret)
+		claims, err := utils.VerifyToken(tokenString, cfg.JWT.Secret, cfg.JWT.Issuer)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Session expired or invalid token signature"})
 			return
