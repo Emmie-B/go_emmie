@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go_emmie/internal/config"
 	"go_emmie/internal/repositories"
 	"go_emmie/internal/types"
+	"go_emmie/internal/utils"
 	"go_emmie/prisma/db"
 
 	"golang.org/x/crypto/bcrypt"
@@ -13,19 +15,26 @@ import (
 
 type AuthService interface {
 	RegisterUser(ctx context.Context, dto types.RegisterRequestDTO) (*types.UserResponseDTO, error)
+	LoginUser(ctx context.Context, dto types.LoginRequestDTO) (*types.UserResponseWithTokenDTO, error) // Returns JWT token on successful login
 }
 
 var (
 	ErrValidation         = errors.New("validation error")
 	ErrEmailAlreadyExists = errors.New("email already exists")
+	ErrAuthentication     = errors.New("authentication failed")
 )
 
 type authService struct {
 	repo repositories.UserRepository
+	cfg *config.Config
 }
 
-func NewAuthService(repo repositories.UserRepository) AuthService {
-	return &authService{repo: repo}
+
+func NewAuthService(repo repositories.UserRepository, cfg *config.Config) (AuthService, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("config must not be nil")
+	}
+	return &authService{repo: repo, cfg: cfg}, nil
 }
 
 func (s *authService) RegisterUser(ctx context.Context, dto types.RegisterRequestDTO) (*types.UserResponseDTO, error) {
@@ -71,6 +80,42 @@ func (s *authService) RegisterUser(ctx context.Context, dto types.RegisterReques
 	responseDTO := ToUserResponseDTO(user)
 
 	return &responseDTO, nil
+}
+
+
+func (s *authService) LoginUser(ctx context.Context, dto types.LoginRequestDTO) (*types.UserResponseWithTokenDTO, error) {
+	// Validate the incoming DTO
+	if err := dto.Validate(); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrValidation, err)
+	}
+
+	// Find the user by email
+	user, err := s.repo.FindByEmail(ctx, dto.Email)
+	if err != nil {
+		if db.IsErrNotFound(err) {
+			return nil, fmt.Errorf("%w: invalid email or password", ErrAuthentication)
+		}
+		return nil, err
+	}
+
+	// Compare the provided password with the stored hash
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(dto.Password)); err != nil {
+		return nil, fmt.Errorf("%w: invalid email or password", ErrAuthentication)
+	}
+
+	// Generate JWT token (this is a placeholder, implement proper JWT generation)
+	token, err := utils.GenerateToken(user.ID, user.Email, string(user.Role), s.cfg.JWT.Secret, s.cfg.JWT.AccessExpiry, s.cfg.JWT.Issuer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	responseDTO := types.UserResponseWithTokenDTO{
+		UserResponseDTO: ToUserResponseDTO(user),
+		Token:           token,
+	}
+
+	return &responseDTO, nil
+
 }
 
 // ToUserResponseDTO converts a raw Prisma User model into a safe, client-facing DTO

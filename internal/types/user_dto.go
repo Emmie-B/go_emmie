@@ -39,9 +39,27 @@ func (r *RegisterRequestDTO) Validate() error {
 
 // LoginRequestDTO handles authentication payloads
 type LoginRequestDTO struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
+
+func (l *LoginRequestDTO) Validate() error {
+	l.Email = strings.TrimSpace(strings.ToLower(l.Email))
+	l.Password = strings.TrimSpace(l.Password)
+
+	if l.Email == "" {
+		return fmt.Errorf("email is required")
+	}
+	if _, err := mail.ParseAddress(l.Email); err != nil {
+		return fmt.Errorf("a valid email address is required")
+	}
+	if l.Password == "" {
+		return fmt.Errorf("password is required")
+	}
+	return nil
+}
+
+
 
 // UserResponseDTO is the clean, safe object returned to the client.
 // It hides password hashes, tokens, and internal database flags.
@@ -53,4 +71,11 @@ type UserResponseDTO struct {
 	Role       string    `json:"role"`
 	IsVerified bool      `json:"is_verified"`
 	CreatedAt  time.Time `json:"created_at"`
+}
+
+
+// user response with token
+type UserResponseWithTokenDTO struct {
+	UserResponseDTO
+	Token string `json:"token"`
 }

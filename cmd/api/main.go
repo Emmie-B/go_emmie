@@ -1,12 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"go_emmie/internal/config"
 	"go_emmie/internal/database"
 	"go_emmie/internal/routes"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func main() {
@@ -28,11 +33,42 @@ func main() {
 
 	r := routes.New(cfg, dbClient)
 
-	if err := r.Run(fmt.Sprintf(":%d", cfg.Server.Port)); err != nil {
-		log.Fatalf("Failed to run server on port %d: %v", cfg.Server.Port, err)
+	srv := &http.Server{
+		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
+		Handler:      r,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
 
 	log.Printf("Server running on port %d", cfg.Server.Port)
+	log.Printf("🚀  server listening on %s", srv.Addr)
 
-	// router.Run(":" + fmt.Sprint(cfg.Server.Port))
+	// Run server in a goroutine to handle graceful shutdown
+	serverErrors := make(chan error, 1)
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			serverErrors <- err
+		}
+	}()
+
+	// Set up signal handling for graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	// Wait for shutdown signal or server error
+	select {
+	case sig := <-sigChan:
+		log.Printf("Received signal %v, initiating graceful shutdown", sig)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Printf("Error during shutdown: %v", err)
+		} else {
+			log.Println("Server shut down successfully")
+		}
+	case err := <-serverErrors:
+		log.Fatalf("Server error: %v", err)
+	}
 }
