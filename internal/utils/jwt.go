@@ -43,9 +43,10 @@ func GenerateToken(userID, email, role, secret string, expiry time.Duration, iss
 
 
 // VerifyToken parses, validates the signature, and returns the unpacked custom claims
-func VerifyToken(tokenString string, secret string) (*UserClaims, error) {
+func VerifyToken(tokenString string, secret string, issuer string) (*UserClaims, error) {
 	parser := jwt.NewParser(
 		jwt.WithValidMethods([]string{"HS256"}), // Prevents algorithm downgrade attacks
+		jwt.WithIssuer(issuer),
 	)
 
 	token, err := parser.ParseWithClaims(tokenString, &UserClaims{}, func(t *jwt.Token) (any, error) {
