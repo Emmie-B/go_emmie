@@ -21,7 +21,10 @@ func New(cfg *config.Config, db *database.DB) *gin.Engine {
 	userRepo := repositories.NewUserRepository(db)
 
 	// initialize services
-	authService := services.NewAuthService(userRepo, cfg)
+	authService, err := services.NewAuthService(userRepo, cfg)
+	if err != nil {
+		panic("failed to initialize auth service: " + err.Error())
+	}
 
 	// init handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -45,7 +48,7 @@ func New(cfg *config.Config, db *database.DB) *gin.Engine {
 			protectedGroup.GET("/profile", authHandler.GetProfile)
 
 			// Example of a route that requires a specific role (e.g. admin)
-			protectedGroup.GET("/admin/dashboard", middlewares.RequireRole("CUSTOMER"), (func(c *gin.Context) {
+			protectedGroup.GET("/admin/dashboard", middlewares.RequireRole("ADMIN"), (func(c *gin.Context) {
 				c.JSON(http.StatusOK, gin.H{"message": "Welcome to the admin dashboard!"})
 			}))
 		}

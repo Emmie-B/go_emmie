@@ -67,7 +67,7 @@ model Product {
   name        String
   slug        String   @unique
   description String?
-  price       Float
+  price       Decimal  @db.Decimal(10, 2)
   stock       Int      @default(0)
   imageURL    String?
   isActive    Boolean  @default(true)
@@ -114,7 +114,7 @@ model CartItem {
 
 model Order {
   id          String      @id @default(uuid())
-  totalAmount Float
+  totalAmount Decimal     @db.Decimal(10, 2)
   status      OrderStatus @default(PENDING)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -130,7 +130,7 @@ model Order {
 model OrderItem {
   id        String   @id @default(uuid())
   quantity  Int
-  unitPrice Float
+  unitPrice Decimal  @db.Decimal(10, 2)
   createdAt DateTime @default(now())
 
   orderId String
@@ -143,11 +143,13 @@ model OrderItem {
 }
 
 model RefreshToken {
-  id     String @id @default(uuid())
-  token  String @unique
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   expiresAt DateTime
   createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
 }

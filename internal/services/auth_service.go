@@ -21,6 +21,7 @@ type AuthService interface {
 var (
 	ErrValidation         = errors.New("validation error")
 	ErrEmailAlreadyExists = errors.New("email already exists")
+	ErrAuthentication     = errors.New("authentication failed")
 )
 
 type authService struct {
@@ -29,8 +30,11 @@ type authService struct {
 }
 
 
-func NewAuthService(repo repositories.UserRepository, cfg *config.Config) AuthService {
-	return &authService{repo: repo, cfg: cfg}
+func NewAuthService(repo repositories.UserRepository, cfg *config.Config) (AuthService, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("config must not be nil")
+	}
+	return &authService{repo: repo, cfg: cfg}, nil
 }
 
 func (s *authService) RegisterUser(ctx context.Context, dto types.RegisterRequestDTO) (*types.UserResponseDTO, error) {
@@ -89,14 +93,14 @@ func (s *authService) LoginUser(ctx context.Context, dto types.LoginRequestDTO) 
 	user, err := s.repo.FindByEmail(ctx, dto.Email)
 	if err != nil {
 		if db.IsErrNotFound(err) {
-			return nil, fmt.Errorf("%w: invalid email or password", ErrValidation)
+			return nil, fmt.Errorf("%w: invalid email or password", ErrAuthentication)
 		}
 		return nil, err
 	}
 
 	// Compare the provided password with the stored hash
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(dto.Password)); err != nil {
-		return nil, fmt.Errorf("%w: invalid email or password", ErrValidation)
+		return nil, fmt.Errorf("%w: invalid email or password", ErrAuthentication)
 	}
 
 	// Generate JWT token (this is a placeholder, implement proper JWT generation)

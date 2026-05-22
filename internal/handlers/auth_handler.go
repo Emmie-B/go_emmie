@@ -67,9 +67,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		case errors.Is(err, services.ErrValidation):
 			status = http.StatusBadRequest
 			message = err.Error()
+		case errors.Is(err, services.ErrAuthentication):
+			status = http.StatusUnauthorized
+			message = "invalid credentials"
 		default:
-			message = err.Error() // Return actual error message for unexpected errors (consider security implications)
-		}		
+			status = http.StatusInternalServerError
+			message = "internal server error"
+		}	
 
 		c.JSON(status, gin.H{"error": message})
 		return
@@ -83,6 +87,12 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 	// Pull fields from context safely
 	userID := c.GetString(types.UserIDContextKey)
 	email := c.GetString(types.EmailContextKey)
+
+	// Validate that required context values are present
+	if userID == "" || email == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing user context"})
+		return
+	}
 
 	// Query data directly using the context value
 	c.JSON(http.StatusOK, gin.H{

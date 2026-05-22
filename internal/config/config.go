@@ -125,5 +125,23 @@ func validate(cfg *Config) error {
 	if cfg.Database.URL == "" {
 		return fmt.Errorf("database URL (DATABASE_URL) is required")
 	}
+
+	// Validate JWT configuration
+	if cfg.JWT.Secret == "" {
+		return fmt.Errorf("JWT secret (JWT_SECRET) is required")
+	}
+	if cfg.JWT.Issuer == "" {
+		return fmt.Errorf("JWT issuer (JWT_ISSUER) is required")
+	}
+	if cfg.JWT.AccessExpiry <= 0 {
+		return fmt.Errorf("JWT access expiry (JWT_ACCESS_EXPIRY) must be greater than 0")
+	}
+	if cfg.JWT.RefreshExpiry <= 0 {
+		return fmt.Errorf("JWT refresh expiry (JWT_REFRESH_EXPIRY) must be greater than 0")
+	}
+	if cfg.JWT.RefreshExpiry <= cfg.JWT.AccessExpiry {
+		return fmt.Errorf("JWT refresh expiry must be greater than access expiry")
+	}
+
 	return nil
 }
